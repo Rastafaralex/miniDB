@@ -7,8 +7,9 @@ import traceback
 import shutil
 sys.path.append('miniDB')
 
-from database import Database
-from table import Table
+from miniDB.database import Database
+from miniDB.table import Table
+
 # art font is "big"
 art = '''
              _         _  _____   ____  
@@ -97,14 +98,35 @@ def create_query_plan(query, keywords, action):
         args = dic['create table'][dic['create table'].index('('):dic['create table'].index(')')+1]
         dic['create table'] = dic['create table'].removesuffix(args).strip()
         arg_nopk = args.replace('primary key', '')[1:-1]
+        arg_noUnique=args.replace('unique', '')[1:-1]
         arglist = [val.strip().split(' ') for val in arg_nopk.split(',')]
         dic['column_names'] = ','.join([val[0] for val in arglist])
         dic['column_types'] = ','.join([val[1] for val in arglist])
+
+       
         if 'primary key' in args:
             arglist = args[1:-1].split(' ')
             dic['primary key'] = arglist[arglist.index('primary')-2]
         else:
             dic['primary key'] = None
+
+        uniques = []
+        for i in arglist:
+            for j in i:
+                if j == 'unique':
+                    unique_column = i[0]
+                    uniques.append(unique_column)
+                    print('PRINTARO TO ONOMA TOU UNIQUE COLUMN')
+                    print(*uniques)
+        dic['unique'] = uniques if uniques else None
+
+
+
+
+
+
+
+        
     
     if action=='import': 
         dic = {'import table' if key=='import' else key: val for key, val in dic.items()}
