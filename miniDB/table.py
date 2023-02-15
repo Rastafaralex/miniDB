@@ -1,5 +1,6 @@
 from __future__ import annotations
 from tabulate import tabulate
+import pandas as panda 
 import pickle
 import os
 import sys
@@ -12,22 +13,19 @@ from misc import get_op, split_condition
 class Table:
     '''
     Table object represents a table inside a database
-
     A Table object can be created either by assigning:
         - a table name (string)
         - column names (list of strings)
         - column types (list of functions like str/int etc)
         - primary (name of the primary key column)
-
     OR
-
         - by assigning a value to the variable called load. This value can be:
             - a path to a Table file saved using the save function
             - a dictionary that includes the appropriate info (all the attributes in __init__)
-
     '''
-    def __init__(self, name=None, column_names=None, column_types=None, primary_key=None, load=None,unique=None):
+    def __init__(self, name=None, column_names=None, column_types=None, primary_key=None, load=None):
 
+       
         if load is not None:
             # if load is a dict, replace the object dict with it (replaces the object with the specified one)
             if isinstance(load, dict):
@@ -40,7 +38,11 @@ class Table:
         # if name, columns_names and column types are not none
         elif (name is not None) and (column_names is not None) and (column_types is not None):
 
+            print('PRINTARO MESA APO INIT TO PROTO SELF._NAME')
+            
             self._name = name
+            print(self._name)
+
 
             if len(column_names)!=len(column_types):
                 raise ValueError('Need same number of column names and types.')
@@ -64,16 +66,59 @@ class Table:
             # if primary key is set, keep its index as an attribute
             if primary_key is not None:
                 self.pk_idx = self.column_names.index(primary_key)
+
             else:
                 self.pk_idx = None
+            
 
+           
+                
+            if os.path.isfile('./unique_table.pkl'):
+                dataFr=panda.read_pickle('./unique_table.pkl')
+                searcher=(dataFr['tab_name']==name) 
+                res=dataFr[searcher]
+                if res.empty:
+                    print('den exume uniques ,')
+                    self.unique_idx=None
+                else:
+                    print("VRETHIKE UNIQUE KAI TORA THA KANO KAPOIES DIERGASIES KAI THA PRINTARO TO")
+                    unique_boy=res.iloc[0]['unique_column']
+                    self.unique_idx=self.column_names.index(unique_boy)
+                    print(unique_boy)
+                    print(self.unique_idx)
+
+            
+                
+                
+
+
+
+
+
+            
+
+           
+
+
+
+
+
+
+            '''
+            with open("unique.txt", "rb") as file:
+                data = file.read()
+                if str(primary_key) in data:
+                    unique_boy=data[0]
+                    print(unique_boy) 
+            '''                   
+        
+            
             self.pk = primary_key
+            
+            
+            
 
-            if unique is not None:
-                self.uniques = str(unique)
-            else:
-                self.uniques = None
-            # self._update()
+           
 
     # if any of the name, columns_names and column types are none. return an empty table object
 
@@ -92,7 +137,6 @@ class Table:
     def _cast_column(self, column_name, cast_type):
         '''
         Cast all values of a column using a specified type.
-
         Args:
             column_name: string. The column that will be casted.
             cast_type: type. Cast type (do not encapsulate in quotes).
@@ -108,15 +152,24 @@ class Table:
 
 
     def _insert(self, row, insert_stack=[]):
+        print('BIKA STIN _INSERT')
         '''
         Insert row to table.
-
         Args:
             row: list. A list of values to be inserted (will be casted to a predifined type automatically).
             insert_stack: list. The insert stack (empty by default).
         '''
+
+        print('EIMAI STIN INSERT STO TABLE.PY KAI KANO PRINT ROW KAI TABLE_N KAI PRINTARO KAI TO UNIQUE IDX')
+        print(row)
+        table_n=row[0].strip("'")
+        
+        
+        
+        #print(self.unique_idx)
         if len(row)!=len(self.column_names):
             raise ValueError(f'ERROR -> Cannot insert {len(row)} values. Only {len(self.column_names)} columns exist')
+
 
         for i in range(len(row)):
             # for each value, cast and replace it in row.
@@ -129,12 +182,17 @@ class Table:
                 if row[i] != None:
                     print(exc)
 
+           
             # if value is to be appended to the primary_key column, check that it doesnt alrady exist (no duplicate primary keys)
             if i==self.pk_idx and row[i] in self.column_by_name(self.pk):
                 raise ValueError(f'## ERROR -> Value {row[i]} already exists in primary key column.')
             elif i==self.pk_idx and row[i] is None:
                 raise ValueError(f'ERROR -> The value of the primary key cannot be None.')
+                    
+           
 
+        print('EIMAI STO DEF _INSERT INTO KAI THA PRINTARO TO SELF.DATA KAI TO ROW POU EINAI MESA')
+        print(self.data)
         # if insert_stack is not empty, append to its last index
         if insert_stack != []:
             self.data[insert_stack[-1]] = row
@@ -145,7 +203,6 @@ class Table:
     def _update_rows(self, set_value, set_column, condition):
         '''
         Update where Condition is met.
-
         Args:
             set_value: string. The provided set value.
             set_column: string. The column to be altered.
@@ -176,10 +233,8 @@ class Table:
     def _delete_where(self, condition):
         '''
         Deletes rows where condition is met.
-
         Important: delete replaces the rows to be deleted with rows filled with Nones.
         These rows are then appended to the insert_stack.
-
         Args:
             condition: string. A condition using the following format:
                 'column[<,<=,==,>=,>]value' or
@@ -215,7 +270,6 @@ class Table:
     def _select_where(self, return_columns, condition=None, distinct=False, order_by=None, desc=True, limit=None):
         '''
         Select and return a table containing specified columns and rows where condition is met.
-
         Args:
             return_columns: list. The columns to be returned.
             condition: string. A condition using the following format:
@@ -228,13 +282,18 @@ class Table:
             desc: boolean. If True, order_by will return results in descending order (False by default).
             limit: int. An integer that defines the number of rows that will be returned (all rows if None).
         '''
+        print('BIKA SELECT WHERE PRINTARO SELF , RETURN_COLUMNS ,CONDITION')
+        print(self)
+        print(return_columns)
+        print(condition)
 
         # if * return all columns, else find the column indexes for the columns specified
         if return_columns == '*':
             return_cols = [i for i in range(len(self.column_names))]
         else:
+            print('PROTO ELSE TOU SELECT WHERE META THA PRINTARO TO RETURN COLS')
             return_cols = [self.column_names.index(col.strip()) for col in return_columns.split(',')]
-
+            print(return_cols)
         # if condition is None, return all rows
         # if not, return the rows with values where condition is met for value
         if condition is not None:
@@ -277,8 +336,14 @@ class Table:
 
     def _select_where_with_hashindex(self, return_columns, index, condition, distinct=False, order_by=None, desc=True, limit=None):
         # if * return all columns, else find the column indexes for the columns specified
-        print('BIKA STO GAMIDI TO SELECT WHERE WITH HASH INDEX')
+        print('BIKA S TO SELECT WHERE WITH HASH INDEX PRINTARO RETURN COLUMNS,INDEX,CONDITION,')
+        print(self)
+        print(return_columns)
         
+        print(self)
+
+       
+        print(condition)
         if return_columns == '*':
             return_cols = [i for i in range(len(self.column_names))]
         else:
@@ -287,8 +352,12 @@ class Table:
         column_name, operator, value = self._parse_condition(condition)
 
         # if the column in condition is not a primary key, abort the select
+        '''
         if column_name != self.column_names[self.pk_idx]:
             print('Column is not PK. Aborting')
+        '''
+
+
 
         # find the rows that match the condition using the hash index
         rows = []
@@ -332,22 +401,36 @@ class Table:
 
     def _select_where_with_btree(self, return_columns, bt, condition, distinct=False, order_by=None, desc=True, limit=None):
 
+        print("SELECT WITH BTREE PRINTARO SELF RETURN COLUMNS,BT,CONDITION,")
+        print(self)
+        print(return_columns)
+        print(bt)
+        print(condition)
         # if * return all columns, else find the column indexes for the columns specified
         if return_columns == '*':
             return_cols = [i for i in range(len(self.column_names))]
         else:
+            print('BIKA ELSE PRINTARO KATI PERIERGA')
+            
             return_cols = [self.column_names.index(colname) for colname in return_columns]
+            print(return_cols)
 
-
+        print('META TO PROTO IF ELSE TOU B TREE PRINTARO COLUMN NAME , OPERATOR ,VAKUE ')
+        print(column_name)
+        print(operator)
+        print(value)
         column_name, operator, value = self._parse_condition(condition)
 
         # if the column in condition is not a primary key, abort the select
+        '''
         if column_name != self.column_names[self.pk_idx]:
             print('Column is not PK. Aborting')
+        '''
 
         # here we run the same select twice, sequentially and using the btree.
         # we then check the results match and compare performance (number of operation)
         column = self.column_by_name(column_name)
+        print(column)
 
         # sequential
         rows1 = []
@@ -387,7 +470,6 @@ class Table:
     def order_by(self, column_name, desc=True):
         '''
         Order table based on column.
-
         Args:
             column_name: string. Name of column.
             desc: boolean. If True, order_by will return results in descending order (False by default).
@@ -402,7 +484,6 @@ class Table:
     def _general_join_processing(self, table_right:Table, condition, join_type):
         '''
         Performs the processes all the join operations need (regardless of type) so that there is no code repetition.
-
         Args:
             condition: string. A condition using the following format:
                 'column[<,<=,==,>=,>]value' or
@@ -446,7 +527,6 @@ class Table:
     def _inner_join(self, table_right: Table, condition):
         '''
         Join table (left) with a supplied table (right) where condition is met.
-
         Args:
             condition: string. A condition using the following format:
                 'column[<,<=,==,>=,>]value' or
@@ -475,7 +555,6 @@ class Table:
     def _left_join(self, table_right: Table, condition):
         '''
         Perform a left join on the table with the supplied table (right).
-
         Args:
             condition: string. A condition using the following format:
                 'column[<,<=,==,>=,>]value' or
@@ -505,7 +584,6 @@ class Table:
     def _right_join(self, table_right: Table, condition):
         '''
         Perform a right join on the table with the supplied table (right).
-
         Args:
             condition: string. A condition using the following format:
                 'column[<,<=,==,>=,>]value' or
@@ -535,7 +613,6 @@ class Table:
     def _full_join(self, table_right: Table, condition):
         '''
         Perform a full join on the table with the supplied table (right).
-
         Args:
             condition: string. A condition using the following format:
                 'column[<,<=,==,>=,>]value' or
@@ -576,7 +653,6 @@ class Table:
     def show(self, no_of_rows=None, is_locked=False):
         '''
         Print the table in a nice readable format.
-
         Args:
             no_of_rows: int. Number of rows.
             is_locked: boolean. Whether it is locked (False by default).
@@ -593,17 +669,33 @@ class Table:
         if self.pk_idx is not None:
             # table has a primary key, add PK next to the appropriate column
             headers[self.pk_idx] = headers[self.pk_idx]+' #PK#'
+
         # detect the rows that are no tfull of nones (these rows have been deleted)
         # if we dont skip these rows, the returning table has empty rows at the deleted positions
+        if os.path.isfile('./unique_table.pkl'):
+            dataFr=panda.read_pickle('./unique_table.pkl')
+            searcher=(dataFr['tab_name']==self._name) 
+            print('EIMAI SE EKEINO TO MALAKISMENO LATHOS STO')
+            res=dataFr[searcher]
+            if res.empty:
+                print('den exume uniques ,')
+                
+            else:
+                print("vrethike unique")
+                unique_boy1=res.iloc[0]['unique_column']
+            
+                print(unique_boy1)
+                if self.unique_idx is not None:
+                    headers[self.unique_idx] = headers[self.unique_idx]+' #UNIQUE#'
+        
         non_none_rows = [row for row in self.data if any(row)]
-        # print using tabulate
+            # print using tabulate
         print(tabulate(non_none_rows[:no_of_rows], headers=headers)+'\n')
 
 
     def _parse_condition(self, condition, join=False):
         '''
         Parse the single string condition and return the value of the column and the operator.
-
         Args:
             condition: string. A condition using the following format:
                 'column[<,<=,==,>=,>]value' or
@@ -628,7 +720,6 @@ class Table:
     def _load_from_file(self, filename):
         '''
         Load table from a pkl file (not used currently).
-
         Args:
             filename: string. Name of pkl file.
         '''
